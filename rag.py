@@ -22,9 +22,14 @@ from bs4 import BeautifulSoup
 load_dotenv()
 
 # Constants
+import tempfile
+import shutil
+
 CHUNK_SIZE = 1000
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-VECTORSTORE_DIR = Path(__file__).parent / "resources/vectorstore"
+# Use a temporary directory for the vector store to avoid Read-Only errors on Cloud
+# We create a specific subdirectory 'rag_vectorstore' in the system temp location
+VECTORSTORE_DIR = Path(tempfile.gettempdir()) / "rag_vectorstore"
 COLLECTION_NAME = "articles"
 
 llm = None
@@ -36,28 +41,30 @@ def initialize_components(api_key=None):
     global llm, vector_store
 
     if llm is None:
-        # 1. Try argument provided from UI
-        if not api_key:
-             # 2. Try Streamlit Secrets
+        # 1. Try argument provided from UI (manual entry)
+        final_api_key = api_key
+        
+        # 2. If not provided, try Streamlit Secrets (preferred automated method)
+        if not final_api_key:
             try:
                 if "GROQ_API_KEY" in st.secrets:
-                    api_key = st.secrets["GROQ_API_KEY"]
+                    final_api_key = st.secrets["GROQ_API_KEY"]
             except Exception:
                 pass
         
-        # 3. Try Environment Variable
-        if not api_key:
-            api_key = os.getenv("GROQ_API_KEY")
+        # 3. If still not found, try Environment Variable (local dev fallback)
+        if not final_api_key:
+            final_api_key = os.getenv("GROQ_API_KEY")
 
-        if not api_key:
-            st.error("❌ GROQ_API_KEY not found! Please enter it in the Sidebar.")
+        if not final_api_key:
+            st.error("❌ GROQ_API_KEY not found! Please set it in Streamlit Secrets or enter it in the Sidebar.")
             st.stop()
             
         # Set env var for libraries that need it
-        os.environ["GROQ_API_KEY"] = api_key
+        os.environ["GROQ_API_KEY"] = final_api_key
             
         llm = ChatGroq(
-            api_key=api_key,
+            api_key=final_api_key,
             model="llama-3.3-70b-versatile", 
             temperature=0.7, 
             max_tokens=1000
