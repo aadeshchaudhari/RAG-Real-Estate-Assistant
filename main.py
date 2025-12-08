@@ -86,13 +86,29 @@ with st.sidebar:
     st.header("⚙️ Configuration")
     
     # API Key Handling
-    api_key = None
+    # 1. Init session state for key if not exists
+    if "api_key" not in st.session_state:
+        st.session_state.api_key = ""
+        
+    api_key = st.session_state.api_key
+    
+    # 2. Try Secrets first
     if "GROQ_API_KEY" in st.secrets:
         st.success("✅ API Key found in Secrets")
         api_key = st.secrets["GROQ_API_KEY"]
+        st.session_state.api_key = api_key # Sync
     else:
-        api_key = st.text_input("🔑 Enter Groq API Key:", type="password", placeholder="gsk_...")
-        if api_key:
+        # 3. Manual Input with Session State
+        input_key = st.text_input(
+            "🔑 Enter Groq API Key:", 
+            type="password", 
+            placeholder="gsk_...",
+            value=st.session_state.api_key,
+            help="Enter your key once, it will be saved for this session."
+        )
+        if input_key:
+            st.session_state.api_key = input_key
+            api_key = input_key
             st.success("✅ API Key provided")
     
     st.divider()
