@@ -36,18 +36,24 @@ def initialize_components():
     global llm, vector_store
 
     if llm is None:
-        # Try to get API key from Streamlit secrets first, then environment variables
+        # Try to get API key from Streamlit secrets first
         api_key = None
         try:
-            # Check if running on Streamlit and secrets are available
             if "GROQ_API_KEY" in st.secrets:
                 api_key = st.secrets["GROQ_API_KEY"]
-        except FileNotFoundError:
-            # st.secrets might raise this locally if no secrets.toml exists
-            pass
+                # Explicitly set env var for deep integration libraries
+                os.environ["GROQ_API_KEY"] = api_key
+                st.sidebar.success("✅ API Key loaded from Secrets")
+        except Exception as e:
+            st.sidebar.warning(f"⚠️ Could not load secrets: {e}")
             
+        # Fallback to environment variable (local dev)
         if not api_key:
             api_key = os.getenv("GROQ_API_KEY")
+
+        if not api_key:
+            st.error("❌ GROQ_API_KEY not found! Please set it in Streamlit Secrets.")
+            st.stop()
             
         llm = ChatGroq(
             api_key=api_key,
