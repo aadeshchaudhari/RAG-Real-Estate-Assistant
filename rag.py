@@ -31,29 +31,30 @@ llm = None
 vector_store = None
 
 
-def initialize_components():
+def initialize_components(api_key=None):
     """Initializes the LLM and Vector Store."""
     global llm, vector_store
 
     if llm is None:
-        # Try to get API key from Streamlit secrets first
-        api_key = None
-        try:
-            if "GROQ_API_KEY" in st.secrets:
-                api_key = st.secrets["GROQ_API_KEY"]
-                # Explicitly set env var for deep integration libraries
-                os.environ["GROQ_API_KEY"] = api_key
-                st.sidebar.success("✅ API Key loaded from Secrets")
-        except Exception as e:
-            st.sidebar.warning(f"⚠️ Could not load secrets: {e}")
-            
-        # Fallback to environment variable (local dev)
+        # 1. Try argument provided from UI
+        if not api_key:
+             # 2. Try Streamlit Secrets
+            try:
+                if "GROQ_API_KEY" in st.secrets:
+                    api_key = st.secrets["GROQ_API_KEY"]
+            except Exception:
+                pass
+        
+        # 3. Try Environment Variable
         if not api_key:
             api_key = os.getenv("GROQ_API_KEY")
 
         if not api_key:
-            st.error("❌ GROQ_API_KEY not found! Please set it in Streamlit Secrets.")
+            st.error("❌ GROQ_API_KEY not found! Please enter it in the Sidebar.")
             st.stop()
+            
+        # Set env var for libraries that need it
+        os.environ["GROQ_API_KEY"] = api_key
             
         llm = ChatGroq(
             api_key=api_key,
@@ -124,9 +125,9 @@ def extract_article_content(soup, url):
     return None
 
 
-def process_urls(urls):
+def process_urls(urls, api_key=None):
     """Processes URLs by automating a real browser and provides full diagnostics."""
-    initialize_components()
+    initialize_components(api_key=api_key)
     yield "🔄 Resetting vector store..."
     vector_store.reset_collection()
 

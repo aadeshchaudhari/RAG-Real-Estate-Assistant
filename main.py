@@ -81,60 +81,22 @@ with col1:
 with col2:
     process_button = st.button("🚀 Process URLs", type="primary", use_container_width=True)
 
-# Status display
-status_placeholder = st.empty()
-
-if process_button:
-    if not urls:
-        status_placeholder.error("❌ Please provide at least one URL in the tabs above.")
-    else:
-        with status_placeholder.container():
-            st.info(f"Processing {len(urls)} article(s)... Please wait.")
-            progress_text = st.empty()
-            
-            for status in process_urls(urls):
-                progress_text.markdown(f"**Status:** {status}")
-            
-            st.session_state.urls_processed = True
-            st.success("✅ All articles processed successfully! You can now ask questions below.")
-
-st.divider()
-
-# Question answering section
-st.subheader("💬 Ask Questions")
-
-if not st.session_state.urls_processed:
-    st.info("ℹ️ Please process the URLs first before asking questions.")
-
-query = st.text_input(
-    "Enter your question about the articles:",
-    placeholder="What is the main topic discussed in these articles?",
-    disabled=not st.session_state.urls_processed
-)
-
-if query and st.session_state.urls_processed:
-    with st.spinner('🔍 Searching articles and generating answer...'):
-        try:
-            answer, sources = generate_answer(query)
-            
-            # Display answer in a nice card
-            st.markdown("### 📝 Answer:")
-            st.info(answer)
-            
-            # Display sources
-            if sources:
-                with st.expander("📚 View Sources", expanded=False):
-                    st.markdown("**References:**")
-                    for idx, source in enumerate(sources.split('\n'), 1):
-                        if source.strip():
-                            st.markdown(f"{idx}. [{source}]({source})")
-        except RuntimeError as e:
-            st.error(f"❌ Error: {str(e)}")
-        except Exception as e:
-            st.error(f"❌ An unexpected error occurred: {str(e)}")
-
-# Sidebar with instructions
+# Sidebar with configuration and instructions
 with st.sidebar:
+    st.header("⚙️ Configuration")
+    
+    # API Key Handling
+    api_key = None
+    if "GROQ_API_KEY" in st.secrets:
+        st.success("✅ API Key found in Secrets")
+        api_key = st.secrets["GROQ_API_KEY"]
+    else:
+        api_key = st.text_input("🔑 Enter Groq API Key:", type="password", placeholder="gsk_...")
+        if api_key:
+            st.success("✅ API Key provided")
+    
+    st.divider()
+
     st.header("ℹ️ How to Use")
     st.markdown("""
     1. **Add URLs**: Click on each tab and paste article links
@@ -161,3 +123,25 @@ with st.sidebar:
         st.session_state.url2 = ""
         st.session_state.url3 = ""
         st.rerun()
+
+# Status display
+status_placeholder = st.empty()
+
+if process_button:
+    if not urls:
+        status_placeholder.error("❌ Please provide at least one URL in the tabs above.")
+    elif not api_key:
+        status_placeholder.error("❌ Please provide a Groq API Key in the sidebar.")
+    else:
+        with status_placeholder.container():
+            st.info(f"Processing {len(urls)} article(s)... Please wait.")
+            progress_text = st.empty()
+            
+            try:
+                for status in process_urls(urls, api_key=api_key):
+                    progress_text.markdown(f"**Status:** {status}")
+                
+                st.session_state.urls_processed = True
+                st.success("✅ All articles processed successfully! You can now ask questions below.")
+            except Exception as e:
+                st.error(f"❌ An error occurred: {str(e)}")
