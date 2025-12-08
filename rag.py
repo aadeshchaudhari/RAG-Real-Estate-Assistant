@@ -1,3 +1,5 @@
+import os
+import streamlit as st
 from dotenv import load_dotenv
 from pathlib import Path
 from langchain_core.documents import Document
@@ -34,7 +36,25 @@ def initialize_components():
     global llm, vector_store
 
     if llm is None:
-        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7, max_tokens=1000)
+        # Try to get API key from Streamlit secrets first, then environment variables
+        api_key = None
+        try:
+            # Check if running on Streamlit and secrets are available
+            if "GROQ_API_KEY" in st.secrets:
+                api_key = st.secrets["GROQ_API_KEY"]
+        except FileNotFoundError:
+            # st.secrets might raise this locally if no secrets.toml exists
+            pass
+            
+        if not api_key:
+            api_key = os.getenv("GROQ_API_KEY")
+            
+        llm = ChatGroq(
+            api_key=api_key,
+            model="llama-3.3-70b-versatile", 
+            temperature=0.7, 
+            max_tokens=1000
+        )
 
     if vector_store is None:
         ef = HuggingFaceEmbeddings(
@@ -111,6 +131,13 @@ def process_urls(urls):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    
+    # Check if running on Streamlit Cloud (Linux) to set binary location
+    # Streamlit Cloud usually installs chromium at /usr/bin/chromium
+    if os.path.exists("/usr/bin/chromium"):
+        chrome_options.binary_location = "/usr/bin/chromium"
+    elif os.path.exists("/usr/bin/chromium-browser"):
+        chrome_options.binary_location = "/usr/bin/chromium-browser"
     
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
