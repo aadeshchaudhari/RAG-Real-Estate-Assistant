@@ -146,15 +146,17 @@ status_placeholder = st.empty()
 if process_button:
     if not urls:
         status_placeholder.error("❌ Please provide at least one URL in the tabs above.")
-    elif not api_key:
-        status_placeholder.error("❌ Please provide a Groq API Key in the sidebar.")
     else:
         with status_placeholder.container():
             st.info(f"Processing {len(urls)} article(s)... Please wait.")
             progress_text = st.empty()
             
             try:
-                for status in process_urls(urls, api_key=api_key):
+                # We pass api_key if found in session/sidebar, otherwise pass None 
+                # and let rag.py use its embedded default.
+                current_api_key = api_key if 'api_key' in locals() and api_key else None
+                
+                for status in process_urls(urls, api_key=current_api_key):
                     progress_text.markdown(f"**Status:** {status}")
                 
                 st.session_state.urls_processed = True
