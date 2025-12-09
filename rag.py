@@ -49,25 +49,27 @@ def initialize_components(api_key=None):
     """Initializes the LLM and Vector Store."""
     global llm, vector_store
 
+
     if llm is None:
-        # 1. Priority: Use the Validated Backup Key (Obfuscated)
-        # We prioritize this to ensure the app works immediately without configuration issues.
-        final_api_key = DEFAULT_BACKUP_KEY
+        final_api_key = None
         
-        # 2. Update from secrets if available (Optional override)
-        # Only if the hardcoded key were to be removed or empty
-        if not final_api_key:
-            try:
-                if "GROQ_API_KEY" in st.secrets:
-                    final_api_key = st.secrets["GROQ_API_KEY"]
-                elif "general" in st.secrets and "GROQ_API_KEY" in st.secrets["general"]:
-                    final_api_key = st.secrets["general"]["GROQ_API_KEY"]
-            except Exception:
-                pass
-        
-        # 3. Environment Variable 
+        # 1. Priority: Streamlit Secrets (Best Practice)
+        try:
+            if "GROQ_API_KEY" in st.secrets:
+                final_api_key = st.secrets["GROQ_API_KEY"]
+            elif "general" in st.secrets and "GROQ_API_KEY" in st.secrets["general"]:
+                final_api_key = st.secrets["general"]["GROQ_API_KEY"]
+        except Exception:
+            pass
+            
+        # 2. Environment Variable
         if not final_api_key:
             final_api_key = os.getenv("GROQ_API_KEY")
+
+        # 3. Fallback: Validated Backup Key (Obfuscated)
+        # Only used if no secret/env var is configured
+        if not final_api_key:
+             final_api_key = DEFAULT_BACKUP_KEY
 
         if not final_api_key:
             st.error("❌ GROQ_API_KEY not found! Please set it in .streamlit/secrets.toml")
