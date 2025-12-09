@@ -65,4 +65,3 @@ This project utilizes a modern AI stack focused on speed and accuracy:
 ---
 
 **Author**: Aadesh Chaudhari
-*Built with ❤️ to simplify complex research.*
