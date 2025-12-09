@@ -37,27 +37,26 @@ st.caption("Paste your article links below:")
 
 col_input, col_void = st.columns([2, 1])
 
+
 with col_input:
-    st.session_state.url1 = st.text_input(
+    st.text_input(
         "Article 1 URL",
-        value=st.session_state.url1,
         placeholder="https://example.com/article-1",
-        key="input_url1"
+        key="url1"
     )
 
-    st.session_state.url2 = st.text_input(
+    st.text_input(
         "Article 2 URL",
-        value=st.session_state.url2,
         placeholder="https://example.com/article-2",
-        key="input_url2"
+        key="url2"
     )
 
-    st.session_state.url3 = st.text_input(
+    st.text_input(
         "Article 3 URL",
-        value=st.session_state.url3,
         placeholder="https://example.com/article-3",
-        key="input_url3"
+        key="url3"
     )
+
 
 st.divider()
 

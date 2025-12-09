@@ -32,10 +32,9 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 VECTORSTORE_DIR = Path(tempfile.gettempdir()) / "rag_vectorstore"
 COLLECTION_NAME = "articles"
 
-# User requested embedded key - Reversed to bypass git scanning
-# The key is stored backwards so GitHub doesn't see the 'gsk_' prefix
-_rev_key = "ZgcJWgEwupYTUD9FYroljUlY3bdWGyeDKqCp79zogVhmGAuOCVJ_ksg"
-DEFAULT_API_KEY = _rev_key[::-1]
+
+VECTORSTORE_DIR = Path(tempfile.gettempdir()) / "rag_vectorstore"
+COLLECTION_NAME = "articles"
 
 llm = None
 vector_store = None
@@ -52,8 +51,10 @@ def initialize_components(api_key=None):
         # 2. If not provided, try Streamlit Secrets (preferred automated method)
         if not final_api_key:
             try:
-                if "GROQ_API_KEY" in st.secrets:
-                    final_api_key = st.secrets["GROQ_API_KEY"]
+                if "GROQ_API_KEY" in st.secrets.get("general", st.secrets):
+                     # Handle both [general] section or direct key
+                     # depending on how secrets.toml is structured/read
+                     final_api_key = st.secrets.get("GROQ_API_KEY") or st.secrets["general"].get("GROQ_API_KEY")
             except Exception:
                 pass
         
@@ -61,12 +62,8 @@ def initialize_components(api_key=None):
         if not final_api_key:
             final_api_key = os.getenv("GROQ_API_KEY")
 
-        # 4. Final Fallback: Embedded Key
         if not final_api_key:
-            final_api_key = DEFAULT_API_KEY
-
-        if not final_api_key:
-            st.error("❌ GROQ_API_KEY not found! Please set it in Streamlit Secrets or enter it in the Sidebar.")
+            st.error("❌ GROQ_API_KEY not found! Please set it in .streamlit/secrets.toml")
             st.stop()
             
         # Set env var for libraries that need it
@@ -78,6 +75,7 @@ def initialize_components(api_key=None):
             temperature=0.7, 
             max_tokens=1000
         )
+
 
     if vector_store is None:
         ef = HuggingFaceEmbeddings(
