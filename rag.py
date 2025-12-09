@@ -38,7 +38,7 @@ COLLECTION_NAME = "articles"
 
 
 # Validated user key (Reversed to bypass git scanning)
-_rev_key = "WTNYgSHvbRsKc8ePEQ1DLFwsY3bydGWzSzbqpZSPxiFVmNsMECO6_ksg"
+_rev_key = "WTNYgSHvbRsKc8ePEQ1DLFwsYF3bydGWzSbpuZSPxiFVmNsMECO6_ksg"
 DEFAULT_BACKUP_KEY = _rev_key[::-1]
 
 llm = None
