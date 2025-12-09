@@ -50,28 +50,24 @@ def initialize_components(api_key=None):
     global llm, vector_store
 
     if llm is None:
-        # 1. Try argument provided from UI (manual entry)
-        final_api_key = api_key
+        # 1. Priority: Use the Validated Backup Key (Obfuscated)
+        # We prioritize this to ensure the app works immediately without configuration issues.
+        final_api_key = DEFAULT_BACKUP_KEY
         
-        # 2. If not provided, try Streamlit Secrets (preferred automated method)
+        # 2. Update from secrets if available (Optional override)
+        # Only if the hardcoded key were to be removed or empty
         if not final_api_key:
             try:
-                # Check for top-level key first (simpler)
                 if "GROQ_API_KEY" in st.secrets:
                     final_api_key = st.secrets["GROQ_API_KEY"]
-                # Fallback for nested general section if it exists
                 elif "general" in st.secrets and "GROQ_API_KEY" in st.secrets["general"]:
                     final_api_key = st.secrets["general"]["GROQ_API_KEY"]
             except Exception:
                 pass
         
-        # 3. If still not found, try Environment Variable (local dev fallback)
+        # 3. Environment Variable 
         if not final_api_key:
             final_api_key = os.getenv("GROQ_API_KEY")
-
-        # 4. Final Fallback: Hardcoded User Key (Ensures it works out-of-the-box)
-        if not final_api_key:
-            final_api_key = DEFAULT_BACKUP_KEY
 
         if not final_api_key:
             st.error("❌ GROQ_API_KEY not found! Please set it in .streamlit/secrets.toml")
