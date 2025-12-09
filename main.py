@@ -12,7 +12,7 @@ st.set_page_config(
 st.markdown("""
     <style>
         .block-container {
-            padding-top: 1rem;
+            padding-top: 3rem;
             padding-bottom: 0rem;
         }
         h1 {
@@ -66,7 +66,7 @@ with col_config:
     # Process Button with minimal spacing
     process_btn = st.button("🚀 Process URLs", type="primary", use_container_width=True)
     
-    # Status Area (Hidden in expandable for compactness)
+    # Status Area (Visible Container)
     status_container = st.container()
 
 # Right Column: Analysis
@@ -111,12 +111,17 @@ if process_btn:
         status_container.error("Please input a URL.")
     else:
         with status_container:
-            with st.status("Processing...", expanded=False) as status:
+            # Expanded=True so user sees the "Processing" state immediately
+            with st.status("Processing articles...", expanded=True) as status:
                 try:
                     for log in process_urls(urls):
                         st.write(log)
                     st.session_state.urls_processed = True
-                    status.update(label="✅ Ready!", state="complete", expanded=False)
+                    status.update(label="✅ Ready! Ask questions on the right.", state="complete", expanded=False)
+                    
+                    # Explicit success message that persists slightly better than just the status label
+                    st.success("Docs Processed! 👉 Go to 'Ask Question'")
+                    
                     st.rerun()
                 except Exception as e:
                     status.update(label="❌ Failed", state="error")
