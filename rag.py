@@ -48,13 +48,16 @@ def initialize_components(api_key=None):
         # 1. Try argument provided from UI (manual entry)
         final_api_key = api_key
         
+
         # 2. If not provided, try Streamlit Secrets (preferred automated method)
         if not final_api_key:
             try:
-                if "GROQ_API_KEY" in st.secrets.get("general", st.secrets):
-                     # Handle both [general] section or direct key
-                     # depending on how secrets.toml is structured/read
-                     final_api_key = st.secrets.get("GROQ_API_KEY") or st.secrets["general"].get("GROQ_API_KEY")
+                # Check for top-level key first (simpler)
+                if "GROQ_API_KEY" in st.secrets:
+                    final_api_key = st.secrets["GROQ_API_KEY"]
+                # Fallback for nested general section if it exists
+                elif "general" in st.secrets and "GROQ_API_KEY" in st.secrets["general"]:
+                    final_api_key = st.secrets["general"]["GROQ_API_KEY"]
             except Exception:
                 pass
         
