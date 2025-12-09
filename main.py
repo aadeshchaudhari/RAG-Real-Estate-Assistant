@@ -8,6 +8,19 @@ st.set_page_config(
     layout="wide"
 )
 
+# CSS to make it "One Page" (Remove top padding)
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 0rem;
+        }
+        h1 {
+            margin-bottom: 0px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if 'urls_processed' not in st.session_state:
     st.session_state.urls_processed = False
@@ -20,114 +33,91 @@ if 'url3' not in st.session_state:
 
 # Sidebar - Instructions & About
 with st.sidebar:
-    st.header("� Guide")
+    st.header("📝 Guide")
     st.markdown("""
     **Welcome!** This tool helps you analyze real estate articles quickly.
     
-    **How to use:**
-    1.  **Paste URLs** of articles in the configuration panel.
-    2.  Click **Process URLs** to extract content.
-    3.  **Ask questions** in the chat panel to get specific insights.
+    1.  **Paste URLs** of articles.
+    2.  Click **Process URLs**.
+    3.  **Ask questions** to get insights.
     """)
-    
-    st.divider()
-    with st.expander("ℹ️ About"):
-        st.markdown("""
-        **RAG-Based Real Estate Assistant**
-        
-        Powered by:
-        - Groq (Llama 3.3)
-        - LangChain
-        - ChromaDB
-        """)
+    st.caption("Powered by Groq & LangChain")
 
-# Main Title
-st.title("🏡 RAG-Based Real Estate Assistant")
-st.caption("AI-Powered Research & Analysis Tool")
+# Main Title (Compact)
+st.markdown("### 🏡 RAG-Based Real Estate Assistant")
 
-st.divider()
-
-# Main Layout: 2 Columns
-col_config, col_main = st.columns([1, 1.5], gap="large")
+# Main Layout: 2 Columns [1 (Narrow Config), 2.5 (Wide Results)]
+# This width difference forces the answer text to be wider and thus shorter vertically
+col_config, col_main = st.columns([1, 2.5], gap="medium")
 
 # Left Column: Configuration
 with col_config:
-    st.subheader("⚙️ Configuration")
-    
-    st.markdown("**Article Sources**")
+    st.markdown("**1. Configure Sources**")
     st.text_input(
-        "Article 1",
-        placeholder="https://example.com/article-1",
-        key="url1",
-        label_visibility="collapsed"
+        "URL 1", placeholder="https://example.com/article-1", key="url1", label_visibility="collapsed"
     )
     st.text_input(
-        "Article 2",
-        placeholder="https://example.com/article-2",
-        key="url2",
-        label_visibility="collapsed"
+        "URL 2", placeholder="https://example.com/article-2", key="url2", label_visibility="collapsed"
     )
     st.text_input(
-        "Article 3",
-        placeholder="https://example.com/article-3",
-        key="url3",
-        label_visibility="collapsed"
+        "URL 3", placeholder="https://example.com/article-3", key="url3", label_visibility="collapsed"
     )
 
-    st.markdown("---")
-    
-    # Process Button
+    # Process Button with minimal spacing
     process_btn = st.button("🚀 Process URLs", type="primary", use_container_width=True)
     
-    # Status Area (Compact)
+    # Status Area (Hidden in expandable for compactness)
     status_container = st.container()
-    
+
 # Right Column: Analysis
 with col_main:
-    st.subheader("🤖 Analysis & Insights")
+    # 2. Analysis Section - No Header to save space
     
-    # Placeholder for when no content is processed
+    # If not processed, show a small hint
     if not st.session_state.urls_processed:
-        st.info("👈 Please add URLs and click **Process** in the configuration panel to start.")
+        st.info("👈 Add URLs and click **Process** to start.")
         
     else:
-        # Chat Interface
-        question = st.text_input("Ask a question about the articles:", placeholder="e.g., What are the key market trends mentioned?")
+        # Chat Interface - Top Alignment
+        col_q, col_btn = st.columns([4, 1])
+        with col_q:
+            question = st.text_input("Ask Question:", placeholder="e.g. key market trends?", label_visibility="collapsed")
+        with col_btn:
+            ask_btn = st.button("Generate Answer", type="secondary", use_container_width=True)
         
-        if st.button("Generate Answer", type="secondary"):
-            if question:
-                with st.spinner("Analyzing content..."):
+        if ask_btn or (question and process_btn): # Trigger if button clicked
+             if question:
+                with st.spinner("Analyzing..."):
                     try:
                         answer, sources = generate_answer(question)
                         
+                        # Answer Display
                         st.markdown("#### 💡 Answer")
-                        st.info(answer)
+                        st.info(answer) # Info box is clean and compact
                         
-                        with st.expander("📚 View Referenced Sources"):
-                            st.text(sources)
+                        # Sources in expander to save huge vertical space
+                        with st.expander("View Sources"):
+                            st.caption(sources)
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
-            else:
+             else:
                 st.warning("Please enter a question.")
 
-# Logic for Processing (Handling in main flow to update UI)
+# Logic for Processing
 if process_btn:
     urls = [url for url in [st.session_state.url1, st.session_state.url2, st.session_state.url3] if url.strip()]
     
     if not urls:
-        status_container.error("❌ Please input at least one URL.")
+        status_container.error("Please input a URL.")
     else:
         with status_container:
-            with st.status("🔄 Processing articles...", expanded=True) as status:
-                st.write("Initializing RAG engine...")
+            with st.status("Processing...", expanded=False) as status:
                 try:
                     for log in process_urls(urls):
-                        st.text(log) # Show logs concisely
-                        
+                        st.write(log)
                     st.session_state.urls_processed = True
-                    status.update(label="✅ Ready! Ask questions on the right.", state="complete", expanded=False)
-                    st.rerun() # Rerun to update the right column state
+                    status.update(label="✅ Ready!", state="complete", expanded=False)
+                    st.rerun()
                 except Exception as e:
                     status.update(label="❌ Failed", state="error")
                     st.error(f"Error: {str(e)}")
-                    st.session_state.urls_processed = False
