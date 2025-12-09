@@ -3,8 +3,8 @@ from rag import process_urls, generate_answer
 
 # Page configuration
 st.set_page_config(
-    page_title="RAG Article Q&A Assistant",
-    page_icon="📚",
+    page_title="Real Estate Assistant",
+    page_icon="🏡",
     layout="wide"
 )
 
@@ -17,109 +17,117 @@ if 'url2' not in st.session_state:
     st.session_state.url2 = ""
 if 'url3' not in st.session_state:
     st.session_state.url3 = ""
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
 
-# Title and Description
-st.title("📚 RAG-Based Article Q&A Assistant")
-st.markdown("""
-Welcome! This tool allows you to:
-1. **Paste article URLs** below
-2. **Process the articles** to extract their content
-3. **Ask questions** and get answers based on the article content
-""")
+# Sidebar - Instructions & About
+with st.sidebar:
+    st.header("� Guide")
+    st.markdown("""
+    **Welcome!** This tool helps you analyze real estate articles quickly.
+    
+    **How to use:**
+    1.  **Paste URLs** of articles in the configuration panel.
+    2.  Click **Process URLs** to extract content.
+    3.  **Ask questions** in the chat panel to get specific insights.
+    """)
+    
+    st.divider()
+    with st.expander("ℹ️ About"):
+        st.markdown("""
+        **RAG-Based Real Estate Assistant**
+        
+        Powered by:
+        - Groq (Llama 3.3)
+        - LangChain
+        - ChromaDB
+        """)
+
+# Main Title
+st.title("🏡 RAG-Based Real Estate Assistant")
+st.caption("AI-Powered Research & Analysis Tool")
 
 st.divider()
 
-# URL Inputs - Vertical Layout matches user request
-st.subheader("🔗 Article URLs")
-st.caption("Paste your article links below:")
+# Main Layout: 2 Columns
+col_config, col_main = st.columns([1, 1.5], gap="large")
 
-col_input, col_void = st.columns([2, 1])
-
-
-with col_input:
+# Left Column: Configuration
+with col_config:
+    st.subheader("⚙️ Configuration")
+    
+    st.markdown("**Article Sources**")
     st.text_input(
-        "Article 1 URL",
+        "Article 1",
         placeholder="https://example.com/article-1",
-        key="url1"
+        key="url1",
+        label_visibility="collapsed"
     )
-
     st.text_input(
-        "Article 2 URL",
+        "Article 2",
         placeholder="https://example.com/article-2",
-        key="url2"
+        key="url2",
+        label_visibility="collapsed"
     )
-
     st.text_input(
-        "Article 3 URL",
+        "Article 3",
         placeholder="https://example.com/article-3",
-        key="url3"
+        key="url3",
+        label_visibility="collapsed"
     )
 
-
-st.divider()
-
-# Process URLs section
-st.subheader("📥 Process Articles")
-
-# Collect valid URLs
-urls = [url for url in [st.session_state.url1, st.session_state.url2, st.session_state.url3] if url.strip()]
-
-col_act, col_info = st.columns([1, 2])
-
-with col_act:
-    process_button = st.button("🚀 Process URLs", type="primary", use_container_width=True)
-
-with col_info:
-    if urls:
-        st.info(f"Ready to process {len(urls)} URL(s).")
+    st.markdown("---")
+    
+    # Process Button
+    process_btn = st.button("🚀 Process URLs", type="primary", use_container_width=True)
+    
+    # Status Area (Compact)
+    status_container = st.container()
+    
+# Right Column: Analysis
+with col_main:
+    st.subheader("🤖 Analysis & Insights")
+    
+    # Placeholder for when no content is processed
+    if not st.session_state.urls_processed:
+        st.info("👈 Please add URLs and click **Process** in the configuration panel to start.")
+        
     else:
-        st.warning("Please add at least one URL above.")
+        # Chat Interface
+        question = st.text_input("Ask a question about the articles:", placeholder="e.g., What are the key market trends mentioned?")
+        
+        if st.button("Generate Answer", type="secondary"):
+            if question:
+                with st.spinner("Analyzing content..."):
+                    try:
+                        answer, sources = generate_answer(question)
+                        
+                        st.markdown("#### 💡 Answer")
+                        st.info(answer)
+                        
+                        with st.expander("📚 View Referenced Sources"):
+                            st.text(sources)
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+            else:
+                st.warning("Please enter a question.")
 
-# Status display
-status_placeholder = st.empty()
-
-if process_button:
+# Logic for Processing (Handling in main flow to update UI)
+if process_btn:
+    urls = [url for url in [st.session_state.url1, st.session_state.url2, st.session_state.url3] if url.strip()]
+    
     if not urls:
-        status_placeholder.error("❌ Please provide at least one URL.")
+        status_container.error("❌ Please input at least one URL.")
     else:
-        with status_placeholder.container():
-            st.info(f"Processing {len(urls)} article(s)... Please wait.")
-            progress_text = st.empty()
-            
-            try:
-                # No manual API key passed; relies on rag.py's internal fallback
-                for status in process_urls(urls):
-                    progress_text.markdown(f"**Status:** {status}")
-                
-                st.session_state.urls_processed = True
-                status_placeholder.success("✅ All articles processed successfully! You can now ask questions below.")
-            except Exception as e:
-                st.session_state.urls_processed = False
-                status_placeholder.error(f"❌ An error occurred: {str(e)}")
-
-st.divider()
-
-# Q&A Section - Only visible after processing
-if st.session_state.urls_processed:
-    st.header("💬 Ask Questions")
-    
-    # Input for question
-    question = st.text_input("Type your question here:", placeholder="What are the main takeaways?")
-    
-    if st.button("Get Answer", type="primary") and question:
-        with st.spinner("Generating answer..."):
-            try:
-                answer, sources = generate_answer(question)
-                
-                st.markdown("### 🤖 Answer")
-                st.write(answer)
-                
-                with st.expander("📚 Sources / References"):
-                    st.write(sources)
-                    
-            except Exception as e:
-                st.error(f"Error generating answer: {str(e)}")
-elif not urls:
-    st.caption("Add URLs and click Process to start asking questions.")
+        with status_container:
+            with st.status("🔄 Processing articles...", expanded=True) as status:
+                st.write("Initializing RAG engine...")
+                try:
+                    for log in process_urls(urls):
+                        st.text(log) # Show logs concisely
+                        
+                    st.session_state.urls_processed = True
+                    status.update(label="✅ Ready! Ask questions on the right.", state="complete", expanded=False)
+                    st.rerun() # Rerun to update the right column state
+                except Exception as e:
+                    status.update(label="❌ Failed", state="error")
+                    st.error(f"Error: {str(e)}")
+                    st.session_state.urls_processed = False
