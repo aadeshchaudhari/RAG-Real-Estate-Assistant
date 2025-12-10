@@ -33,8 +33,7 @@ VECTORSTORE_DIR = Path(tempfile.gettempdir()) / "rag_vectorstore"
 COLLECTION_NAME = "articles"
 
 
-VECTORSTORE_DIR = Path(tempfile.gettempdir()) / "rag_vectorstore"
-COLLECTION_NAME = "articles"
+
 
 
 # Validated user key (Reversed to bypass git scanning)
